@@ -2,14 +2,14 @@
 
 Moldova Government Procurement (MTender) MCP — keyless.
 
-Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 1476+ live data sources.
+Part of [Pipeworx](https://pipeworx.io) — an MCP gateway connecting AI agents to 1679+ live data sources.
 
 ## Tools
 
 | Tool | Description |
 |------|-------------|
-| `moldova_recent_tenders` | Most recent government procurement tenders from Moldova's national e-procurement platform (MTender), published as Open Contracting (OCDS) data. Returns each tender with ocid, title, buyer (procuring entity), value + currency (MDL), status, CPV classification, and publication/period dates. Titles and descriptions are in Romanian. Use moldova_get_tender for the full detail of one tender. |
-| `moldova_get_tender` | Full detail for a single Moldova (MTender) government procurement tender by its OCDS contracting id (ocid, e.g. "ocds-b3wdp1-MD-1539840280133"). Returns title, description, buyer/procuring entity, value + currency, status, procurement method and category, CPV classification, tender period dates, budget, and parties. Get an ocid from moldova_recent_tenders or moldova_search_tenders. |
+| `moldova_recent_tenders` | Most recent government procurement tenders from Moldova's national e-procurement platform (MTender), published as Open Contracting (OCDS) data. Returns each tender with ocid, title, buyer (procuring entity), value + currency (MDL — the ORIGINAL ASKING PRICE, not necessarily spent), award_value/award_currency (the amount actually awarded, when the process has reached that stage), status, an `interpretation` line stating plainly whether the value was ever spent, CPV classification, and publication/period dates. Titles and descriptions are in Romanian. Use moldova_get_tender for the full award/contract detail of one tender. |
+| `moldova_get_tender` | Full detail for a single Moldova (MTender) government procurement tender by its OCDS contracting id (ocid, e.g. "ocds-b3wdp1-MD-1539840280133"). Returns title, description, buyer/procuring entity, status, an `interpretation` line stating plainly whether tender_value was ever spent, tender_value (the ORIGINAL ASKING PRICE — not money spent), procurement method and category, CPV classification, tender period dates, budget, parties, and the OCDS award stage: `award` (the operative award — status, date, value, winning supplier, and a reason when nothing was awarded; null when no award has happened) plus the full `awards` history across every lot. Get an ocid from moldova_recent_tenders or moldova_search_tenders. |
 | `moldova_search_tenders` | Keyword search over recent Moldova (MTender) government procurement tenders. Scans the most recent tenders and returns those whose title, buyer, or CPV description contains the query (case-insensitive; Romanian text). Note: this is a client-side filter over recent tenders (MTender has no native full-text search), so it matches recent listings only. Returns shaped tenders like moldova_recent_tenders. |
 
 ## Quick Start
@@ -56,9 +56,45 @@ directly, instead of just this one's:
 }
 ```
 
-Both URLs reach the same gateway and the same 1476+ data sources. The
+Both URLs reach the same gateway and the same 1679+ data sources. The
 only difference is which pack's tools are listed **directly**; `ask_pipeworx`
 reaches all of them from either one.
+
+## No MCP client? Call it over HTTP
+
+```bash
+curl -X POST https://gateway.pipeworx.io/v1/tools/moldova_recent_tenders \
+  -H 'Content-Type: application/json' \
+  -d '{"limit":20}'
+```
+
+No account needed for the first calls. Inspect any tool: `GET https://gateway.pipeworx.io/v1/tools/moldova_recent_tenders`. Find one: `POST https://gateway.pipeworx.io/v1/tools/search_packs` with `{"query":"..."}`.
+
+## Standalone (no gateway account)
+
+This package also runs as a local stdio MCP server — no Pipeworx account, no
+gateway round-trip:
+
+```json
+{
+  "mcpServers": {
+    "moldova-tenders": {
+      "command": "npx",
+      "args": ["-y", "@pipeworx/mcp-moldova-tenders"]
+    }
+  }
+}
+```
+
+Or run it directly to confirm it starts:
+
+```bash
+npx -y @pipeworx/mcp-moldova-tenders
+```
+
+It speaks MCP over stdin/stdout and answers `initialize`/`tools/list`/`tools/call`
+for **only** this pack's tools — none of the shared meta-tools the gateway
+connection above adds. Same source, same tools, no ask_pipeworx routing.
 
 ## Using with ask_pipeworx
 
@@ -79,13 +115,3 @@ The gateway picks the right tool and fills the arguments automatically.
 ## License
 
 MIT
-
-## No MCP client? Call it over HTTP
-
-```bash
-curl -X POST https://gateway.pipeworx.io/v1/tools/moldova_recent_tenders \
-  -H 'Content-Type: application/json' \
-  -d '{"limit":20}'
-```
-
-No account needed for the first calls. Inspect any tool: `GET https://gateway.pipeworx.io/v1/tools/moldova_recent_tenders`. Find one: `POST https://gateway.pipeworx.io/v1/tools/search_packs` with `{"query":"..."}`.
